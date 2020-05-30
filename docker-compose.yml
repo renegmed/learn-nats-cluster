@@ -1,0 +1,61 @@
+version: '3'
+
+services:
+    # docker image configuration is found here https://github.com/nats-io/nats-docker/blob/6fb8c05311bb4d1554390f66abb0a5ebef1e1c9d/2.1.0/scratch/amd64/nats-server.conf#L13-L19
+    nats:
+        container_name: "nats_1"
+        image: nats:latest
+        expose:
+            - "4222"       
+        ports:
+            - "8222:8222"
+    nats-2:
+        container_name: "nats_2"
+        image: nats:latest
+        command: "--port 4223 --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222"
+    nats-3:
+        container_name: "nats_3"
+        image: nats:latest
+        command: "--port 4224 --cluster nats://0.0.0.0:6222 --routes=nats://ruser:T0pS3cr3t@nats:6222" 
+
+    api:
+        container_name: "api-server"
+        build:
+            context: "./api-server" 
+        # do  curl localhost:8222/varz to get nats cluster's connect_urls
+        command: "--listen 0.0.0.0:8080 --nats=nats://172.20.0.2:4222,nats://172.20.0.4:4224,nats://172.20.0.3:4223"        
+        expose:
+            - "8080"
+        ports:
+            - "8080:8080"
+        depends_on:
+            - nats
+        
+    rides-manager:
+        container_name: "rides-manager"
+        build:
+            context: "./rides-manager" 
+         # do  curl localhost:8222/varz to get nats cluster's connect_urls  
+        command: "--nats=nats://172.20.0.2:4222,nats://172.20.0.4:4224,nats://172.20.0.3:4223"
+        depends_on:
+            - nats
+    driver-agent-1:
+        container_name: "driver-agent-suv"
+        build:
+            context: "./driver-agent" 
+        command: "--type suv --nats=nats://172.20.0.2:4222,nats://172.20.0.4:4224,nats://172.20.0.3:4223"
+        depends_on:
+            - nats
+
+    driver-agent-2:
+        container_name: "driver-agent-regular"
+        build:
+            context: "./driver-agent" 
+        command: "--type regular --nats=nats://172.20.0.2:4222,nats://172.20.0.4:4224,nats://172.20.0.3:4223"
+        depends_on:
+            - nats
+
+networks:
+    default:
+        external:
+            name: nats

@@ -1,0 +1,4 @@
+Status: working
+
+Book: Practical NATS Chapter 6
+Source: https://github.com/wallyqs/practical-nats/tree/master/chapter-06/code
